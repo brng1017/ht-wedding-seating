@@ -11,7 +11,13 @@ type Post = {
   caption: string | null;
 };
 
-export default function Gallery({ refreshKey }: { refreshKey: number }) {
+export default function Gallery({
+  refreshKey,
+  isAdmin = false,
+}: {
+  refreshKey: number;
+  isAdmin?: boolean;
+}) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +55,10 @@ export default function Gallery({ refreshKey }: { refreshKey: number }) {
             const url = data.publicUrl;
 
             return (
-              <div key={p.id} className='rounded-2xl border overflow-hidden'>
+              <div
+                key={p.id}
+                className='relative rounded-2xl border overflow-hidden'
+              >
                 <div className='aspect-square bg-black/5'>
                   {p.file_type === 'image' ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -70,6 +79,22 @@ export default function Gallery({ refreshKey }: { refreshKey: number }) {
                 {p.caption ? (
                   <div className='p-2 text-sm opacity-80'>{p.caption}</div>
                 ) : null}
+                {isAdmin && (
+                  <button
+                    className='absolute top-2 right-2 rounded-full bg-black/60 text-white px-2 py-1 text-xs'
+                    onClick={async () => {
+                      if (!confirm('Delete this photo/video?')) return;
+
+                      await fetch(`/api/posts/${p.id}`, {
+                        method: 'DELETE',
+                      });
+
+                      location.reload();
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             );
           })}

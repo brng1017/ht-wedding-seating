@@ -19,7 +19,6 @@ export async function fetchGuestsFromSheet() {
 
   const sheets = google.sheets({ version: 'v4', auth });
 
-  // Adjust range to match your sheet/tab name
   const range = 'Guests!A:Z';
 
   const res = await sheets.spreadsheets.values.get({
@@ -37,7 +36,6 @@ export async function fetchGuestsFromSheet() {
     return obj;
   });
 
-  // Expect at least: name, table
   return data
     .filter((g) => g.name && g.table)
     .map((g) => ({

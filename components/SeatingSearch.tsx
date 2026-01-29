@@ -12,15 +12,33 @@ export default function SeatingSearch() {
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
+
+    async function loadGuests() {
       setLoading(true);
-      const res = await fetch('/api/guests', { cache: 'no-store' });
-      const json = await res.json();
-      if (mounted) {
+
+      try {
+        const res = await fetch('/api/guests', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Network error');
+
+        const json = await res.json();
+        if (!mounted) return;
+
         setGuests(json.guests ?? []);
-        setLoading(false);
+        localStorage.setItem(
+          'wedding_guests_cache',
+          JSON.stringify(json.guests),
+        );
+      } catch (err) {
+        const cached = localStorage.getItem('wedding_guests_cache');
+        if (cached && mounted) {
+          setGuests(JSON.parse(cached));
+        }
+      } finally {
+        if (mounted) setLoading(false);
       }
-    })();
+    }
+
+    loadGuests();
     return () => {
       mounted = false;
     };
