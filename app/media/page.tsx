@@ -8,25 +8,11 @@ export default function MediaPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className='mx-auto max-w-3xl p-4'>
-      <h1 className='text-2xl font-semibold'>Photo & Video Wall</h1>
-      <div className='mt-4 grid gap-4 md:grid-cols-2'>
-        <MediaUploader onUploaded={() => setRefreshKey((x) => x + 1)} />
-        <div className='rounded-2xl border p-4'>
-          <div className='text-lg font-semibold'>Slideshow Mode</div>
-          <p className='mt-1 text-sm opacity-80'>
-            Put this on a TV/tablet for a live feed vibe.
-          </p>
-          <a
-            className='mt-3 inline-block rounded-xl border px-4 py-3 font-semibold'
-            href='/tv'
-          >
-            Open Slideshow
-          </a>
-        </div>
-      </div>
+    <div className='relative h-full flex flex-col items-center p-3'>
+      <h1 className='text-5xl font-cursive'>Photo Share</h1>
 
       <Gallery refreshKey={refreshKey} />
+      <MediaUploader onUploaded={() => setRefreshKey((x) => x + 1)} />
     </div>
   );
 }

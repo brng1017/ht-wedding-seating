@@ -1,26 +1,74 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');
+@import 'tailwindcss';
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --text-muted: rgba(0, 0, 0, 0.55);
+
+  --accent-soft: #ffafcc; /* highlights */
+  --accent-strong: #a2d2ff; /* buttons/nav */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@font-face {
+  font-family: 'EB_Garamond';
+  src: url('https://fonts.gstatic.com/s/EB_Garamond/v26/JTUQjIg1_i6t8kCHKm459WxZ.woff2')
+    format('woff2');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  --font-cursive: 'Pinyon Script', cursive;
+  --font-test: 'EB Garamond', serif;
+  --font-serif: var(--font-serif);
+  --color-orchid: #cdb4db;
+  --color-petal: #ffc8dd;
+  --color-blush: #ffafcc;
+  --color-icy: #bde0fe;
+  --color-sky: #a2d2ff;
+  --color-ivory: #fffff0;
+  --color-taupe: #a08060;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(
+    circle at top,
+    #bde0fe 0%,
+    #fffff0 75%,
+    #fffff0 100%
+  );
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-variation-settings: 'wght' var(--tw-font-weight);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.scrollable-content {
+  overflow-y: scroll; /* Ensures scrolling is possible */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* For Chrome, Safari, and Opera */
+.scrollable-content::-webkit-scrollbar {
+  display: none;
 }

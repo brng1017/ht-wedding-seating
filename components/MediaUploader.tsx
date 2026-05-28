@@ -1,69 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 export default function MediaUploader({
   onUploaded,
 }: {
   onUploaded: () => void;
 }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [caption, setCaption] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  async function submit() {
-    if (!file) return;
+  async function uploadFile(file: File) {
     setBusy(true);
     setMsg(null);
 
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('caption', caption);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
 
-    const res = await fetch('/api/upload', { method: 'POST', body: fd });
-    const json = await res.json();
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd,
+      });
 
-    if (!res.ok) {
-      setMsg(json.error || 'Upload failed');
-    } else {
-      setFile(null);
-      setCaption('');
-      setMsg(json.approved ? 'Uploaded!' : 'Uploaded — pending approval ❤️');
-      onUploaded();
+      const json = await res.json();
+
+      if (!res.ok) {
+        setMsg(json.error || 'Upload failed');
+      } else {
+        setMsg(json.approved ? 'Uploaded!' : 'Upload - pending approval');
+        onUploaded();
+      }
+    } catch {
+      setMsg('Upload failed');
+    } finally {
+      setBusy(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-    setBusy(false);
   }
 
   return (
-    <div className='rounded-2xl border p-4'>
-      <div className='text-lg font-semibold'>Share Photos & Videos</div>
-      <p className='text-sm opacity-80 mt-1'>Keep it wedding-friendly 😄</p>
-
+    <>
       <input
-        className='mt-3 w-full'
+        ref={fileInputRef}
         type='file'
         accept='image/*,video/*'
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-      />
-
-      <input
-        className='mt-3 w-full rounded-xl border px-3 py-2'
-        placeholder='Caption (optional)'
-        value={caption}
-        onChange={(e) => setCaption(e.target.value)}
-        maxLength={140}
+        className='hidden'
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) uploadFile(file);
+        }}
       />
 
       <button
-        className='mt-3 w-full rounded-xl border px-4 py-3 font-semibold disabled:opacity-50'
-        disabled={!file || busy}
-        onClick={submit}
+        type='button'
+        disabled={busy}
+        onClick={() => fileInputRef.current?.click()}
+        className='
+          absolute bottom-2 left-0 w-full
+          border border-taupe/40
+          bg-ivory opacity-95 transition-colors
+          py-2 z-20
+          text-lg font-light uppercase text-taupe
+          shadow-lg backdrop-blur
+          disabled:opacity-50 active:scale-[0.98]
+        '
       >
-        {busy ? 'Uploading…' : 'Upload'}
+        {busy ? 'Uploading…' : 'Upload Photo/Video'}
       </button>
 
-      {msg && <div className='mt-3 text-sm opacity-80'>{msg}</div>}
-    </div>
+      {msg && (
+        <div className='absolute bottom-16 left-0 right-0 text-center text-sm opacity-70'>
+          {msg}
+        </div>
+      )}
+    </>
   );
 }

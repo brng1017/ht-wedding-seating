@@ -63,14 +63,9 @@ export default function SeatingSearch() {
   }, [query, fuse]);
 
   return (
-    <div className='mx-auto max-w-xl p-4'>
-      <h1 className='text-2xl font-semibold'>Find Your Table</h1>
-      <p className='mt-2 text-sm opacity-80'>
-        Type your name. If you're in a group, try the family name.
-      </p>
-
+    <div className='w-full flex-1 p-4 flex flex-col min-h-0'>
       <input
-        className='mt-4 w-full rounded-xl border px-4 py-3 text-lg'
+        className='w-full border-b px-4 py-3 text-sm text-center uppercase'
         placeholder={
           loading ? 'Loading guest list...' : 'Start typing your name...'
         }
@@ -82,23 +77,16 @@ export default function SeatingSearch() {
       />
 
       {query.trim() && (
-        <div className='mt-4 space-y-3'>
+        <div className='mt-4 space-y-3 flex-1 min-h-0 overflow-y-auto'>
           {results.length === 0 ? (
-            <div className='rounded-xl border p-4'>
-              <div className='font-medium'>No matches yet</div>
-              <div className='text-sm opacity-80 mt-1'>
-                Try a shorter version (e.g., "Chris" instead of "Christopher").
-              </div>
+            <div className='p-4 opacity-60 uppercase text-center'>
+              <div className=''>No matches yet</div>
             </div>
           ) : (
             results.map((g) => (
-              <div
-                key={`${g.name}-${g.table}`}
-                className='rounded-xl border p-4'
-              >
-                <div className='flex items-baseline justify-between gap-4'>
-                  <div className='font-semibold text-lg'>{g.name}</div>
-                  <div className='text-xl font-bold'>Table {g.table}</div>
+              <div key={`${g.name}-${g.table}`} className='p-2 text-center'>
+                <div className='text-lg font-light opacity-80 uppercase'>
+                  {g.name} | Table {g.table}
                 </div>
                 {(g.party || g.notes) && (
                   <div className='mt-2 text-sm opacity-80'>
