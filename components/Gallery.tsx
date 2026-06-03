@@ -3,12 +3,14 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type TouchEvent,
 } from 'react';
 import { supabasePublic } from '@/lib/supabase/client';
 import { FaChevronLeft, FaChevronRight, FaPlay } from 'react-icons/fa';
+import { LuRefreshCw } from 'react-icons/lu';
 
 type Post = {
   id: string;
@@ -21,9 +23,12 @@ type Post = {
 type SlideTransition = {
   direction: 1 | -1;
   from: number;
+  fromOffsetPx: number;
   phase: 'idle' | 'active';
   to: number;
 };
+
+type DragState = 'idle' | 'dragging' | 'settling';
 
 const SLIDE_DURATION_MS = 280;
 
@@ -37,30 +42,71 @@ export default function Gallery({
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [slideTransition, setSlideTransition] = useState<SlideTransition | null>(
-    null
-  );
+  const [slideTransition, setSlideTransition] =
+    useState<SlideTransition | null>(null);
+  const [dragOffsetX, setDragOffsetX] = useState(0);
+  const [dragState, setDragState] = useState<DragState>('idle');
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const isDragging = useRef(false);
   const slideTimeoutRef = useRef<number | null>(null);
+  const dragTimeoutRef = useRef<number | null>(null);
+  const overlayViewportRef = useRef<HTMLDivElement | null>(null);
 
   const visibleActiveIndex =
     activeIndex === null || posts.length === 0
       ? null
       : Math.min(activeIndex, posts.length - 1);
   const activePost =
-    visibleActiveIndex === null ? null : posts[visibleActiveIndex] ?? null;
+    visibleActiveIndex === null ? null : (posts[visibleActiveIndex] ?? null);
+  const dragDirection = dragOffsetX === 0 ? 0 : dragOffsetX > 0 ? -1 : 1;
+  const dragTargetIndex = useMemo(() => {
+    if (
+      visibleActiveIndex === null ||
+      posts.length < 2 ||
+      dragDirection === 0
+    ) {
+      return null;
+    }
+
+    return (
+      (visibleActiveIndex + dragDirection + posts.length) % posts.length
+    );
+  }, [dragDirection, posts.length, visibleActiveIndex]);
+
+  const getViewportWidth = useCallback(() => {
+    const width = overlayViewportRef.current?.getBoundingClientRect().width;
+    if (width && width > 0) return width;
+    if (typeof window !== 'undefined') return window.innerWidth;
+    return 1;
+  }, []);
+
+  const resetDragState = useCallback(() => {
+    if (dragTimeoutRef.current !== null) {
+      window.clearTimeout(dragTimeoutRef.current);
+      dragTimeoutRef.current = null;
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+    isDragging.current = false;
+    setDragOffsetX(0);
+    setDragState('idle');
+  }, []);
 
   useEffect(() => {
     return () => {
       if (slideTimeoutRef.current !== null) {
         window.clearTimeout(slideTimeoutRef.current);
       }
+      if (dragTimeoutRef.current !== null) {
+        window.clearTimeout(dragTimeoutRef.current);
+      }
     };
   }, []);
 
   const stepActivePost = useCallback(
-    (direction: 1 | -1) => {
+    (direction: 1 | -1, fromOffsetPx = 0) => {
       if (visibleActiveIndex === null || posts.length === 0) return;
 
       const nextIndex =
@@ -75,10 +121,13 @@ export default function Gallery({
       setSlideTransition({
         direction,
         from: visibleActiveIndex,
+        fromOffsetPx,
         phase: 'idle',
         to: nextIndex,
       });
       setActiveIndex(nextIndex);
+      setDragOffsetX(0);
+      setDragState('idle');
 
       window.requestAnimationFrame(() => {
         setSlideTransition((current) => {
@@ -99,7 +148,7 @@ export default function Gallery({
         slideTimeoutRef.current = null;
       }, SLIDE_DURATION_MS);
     },
-    [posts.length, visibleActiveIndex]
+    [posts.length, visibleActiveIndex],
   );
 
   async function fetchPosts() {
@@ -157,9 +206,31 @@ export default function Gallery({
   }, [stepActivePost, visibleActiveIndex]);
 
   function handleTouchStart(event: TouchEvent<HTMLDivElement>) {
+    if (posts.length < 2 || slideTransition !== null) return;
+
     const touch = event.touches[0];
     touchStartX.current = touch.clientX;
     touchStartY.current = touch.clientY;
+    isDragging.current = false;
+    setDragOffsetX(0);
+    setDragState('idle');
+  }
+
+  function handleTouchMove(event: TouchEvent<HTMLDivElement>) {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - touchStartX.current;
+    const deltaY = touch.clientY - touchStartY.current;
+
+    if (!isDragging.current) {
+      if (Math.abs(deltaX) < 8) return;
+      if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+      isDragging.current = true;
+      setDragState('dragging');
+    }
+
+    setDragOffsetX(deltaX);
   }
 
   function handleTouchEnd(event: TouchEvent<HTMLDivElement>) {
@@ -169,12 +240,29 @@ export default function Gallery({
     const deltaX = touch.clientX - touchStartX.current;
     const deltaY = touch.clientY - touchStartY.current;
 
+    if (!isDragging.current) {
+      resetDragState();
+      return;
+    }
+
+    const minSwipeDistance = Math.min(getViewportWidth() * 0.18, 120);
+    const isCommittedSwipe =
+      Math.abs(deltaX) >= minSwipeDistance && Math.abs(deltaX) > Math.abs(deltaY);
+
+    if (isCommittedSwipe) {
+      stepActivePost(deltaX > 0 ? -1 : 1, deltaX);
+    } else {
+      setDragState('settling');
+      setDragOffsetX(0);
+      dragTimeoutRef.current = window.setTimeout(() => {
+        setDragState('idle');
+        dragTimeoutRef.current = null;
+      }, SLIDE_DURATION_MS);
+    }
+
     touchStartX.current = null;
     touchStartY.current = null;
-
-    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
-
-    stepActivePost(deltaX > 0 ? -1 : 1);
+    isDragging.current = false;
   }
 
   function getPostUrl(post: Post) {
@@ -211,11 +299,18 @@ export default function Gallery({
   function renderActiveSlide(
     post: Post,
     index: number,
-    role: 'current' | 'next'
+    role: 'current' | 'next',
   ) {
     const isTransitioning = slideTransition !== null;
+    const isDraggingSlide = !isTransitioning && dragState === 'dragging';
+    const isSettlingBack = !isTransitioning && dragState === 'settling';
     const isOutgoing = role === 'current';
     const direction = slideTransition?.direction ?? 1;
+    const viewportWidth = getViewportWidth();
+    const transitionOffsetPercent = slideTransition
+      ? (slideTransition.fromOffsetPx / viewportWidth) * 100
+      : 0;
+    const dragOffsetPercent = (dragOffsetX / viewportWidth) * 100;
 
     let transform = 'translate3d(0, 0, 0)';
     let opacity = 1;
@@ -223,8 +318,8 @@ export default function Gallery({
     if (isTransitioning) {
       if (slideTransition.phase === 'idle') {
         transform = isOutgoing
-          ? 'translate3d(0, 0, 0)'
-          : `translate3d(${direction * 100}%, 0, 0)`;
+          ? `translate3d(${transitionOffsetPercent}%, 0, 0)`
+          : `translate3d(${direction * 100 + transitionOffsetPercent}%, 0, 0)`;
         opacity = isOutgoing ? 1 : 0.92;
       } else {
         transform = isOutgoing
@@ -232,6 +327,13 @@ export default function Gallery({
           : 'translate3d(0, 0, 0)';
         opacity = isOutgoing ? 0.82 : 1;
       }
+    } else if (isDraggingSlide && dragTargetIndex !== null) {
+      const isDragOutgoing = role === 'current';
+
+      transform = isDragOutgoing
+        ? `translate3d(${dragOffsetPercent}%, 0, 0)`
+        : `translate3d(${dragDirection * 100 + dragOffsetPercent}%, 0, 0)`;
+      opacity = isDragOutgoing ? 1 : 0.92;
     }
 
     return (
@@ -241,9 +343,10 @@ export default function Gallery({
         style={{
           opacity,
           transform,
-          transition: isTransitioning
-            ? `transform ${SLIDE_DURATION_MS}ms ease, opacity ${SLIDE_DURATION_MS}ms ease`
-            : undefined,
+          transition:
+            isTransitioning || isSettlingBack
+              ? `transform ${SLIDE_DURATION_MS}ms ease, opacity ${SLIDE_DURATION_MS}ms ease`
+              : undefined,
         }}
       >
         <div
@@ -252,7 +355,9 @@ export default function Gallery({
         >
           {renderPostMedia(post)}
           {post.caption && (
-            <div className='text-center text-sm text-white/80'>{post.caption}</div>
+            <div className='text-center text-sm text-white/80'>
+              {post.caption}
+            </div>
           )}
         </div>
       </div>
@@ -268,7 +373,9 @@ export default function Gallery({
       </div>
 
       {loading ? (
-        <div className='mt-3 opacity-80'>Loading...</div>
+        <div className='mt-36 flex-1 min-h-0 flex items-center justify-center'>
+          <LuRefreshCw className='size-8 opacity-80 animate-spin' />
+        </div>
       ) : (
         <div className='mt-3 flex-1 min-h-0 overflow-y-scroll pb-12'>
           <div className='grid grid-cols-2 sm:grid-cols-3'>
@@ -315,7 +422,7 @@ export default function Gallery({
                         if (!res.ok) return;
 
                         setPosts((current) =>
-                          current.filter((post) => post.id !== p.id)
+                          current.filter((post) => post.id !== p.id),
                         );
                         setActiveIndex((current) => {
                           if (current === null) return current;
@@ -345,6 +452,7 @@ export default function Gallery({
               event.stopPropagation();
               setActiveIndex(null);
               setSlideTransition(null);
+              resetDragState();
             }}
             aria-label='Close post'
           >
@@ -377,7 +485,9 @@ export default function Gallery({
           )}
 
           <div
+            ref={overlayViewportRef}
             className='pointer-events-none relative h-full w-full overflow-hidden touch-pan-y'
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onTouchStart={handleTouchStart}
           >
@@ -386,10 +496,23 @@ export default function Gallery({
               renderActiveSlide(
                 posts[slideTransition.from],
                 slideTransition.from,
-                'current'
+                'current',
               )}
-            {visibleActiveIndex !== null &&
+            {!slideTransition &&
+              dragTargetIndex !== null &&
+              visibleActiveIndex !== null &&
+              renderActiveSlide(activePost, visibleActiveIndex, 'current')}
+            {slideTransition &&
+              visibleActiveIndex !== null &&
               renderActiveSlide(activePost, visibleActiveIndex, 'next')}
+            {!slideTransition &&
+              dragTargetIndex !== null &&
+              posts[dragTargetIndex] &&
+              renderActiveSlide(posts[dragTargetIndex], dragTargetIndex, 'next')}
+            {!slideTransition &&
+              dragTargetIndex === null &&
+              visibleActiveIndex !== null &&
+              renderActiveSlide(activePost, visibleActiveIndex, 'current')}
           </div>
         </div>
       )}
