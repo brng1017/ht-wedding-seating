@@ -15,11 +15,11 @@ export default function HomePage() {
         alt='upload'
         className='absolute bottom-0 right-0 h-52 w-auto opacity-70 pointer-events-none object-contain rotate-180'
       />
-      <div className='relative mb-4 font-cursive'>
-        <h1 className='text-8xl'>
+      <div className='relative mb-4'>
+        <h1 className='text-8xl font-cursive-secondary'>
           Huy<br></br>Teresa
         </h1>
-        <h1 className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[14rem] leading-none text-black/25'>
+        <h1 className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[14rem] leading-none text-black/25 font-cursive'>
           &
         </h1>
       </div>

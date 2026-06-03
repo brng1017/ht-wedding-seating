@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ballet:opsz@16..72&display=swap');
 @import 'tailwindcss';
 
 :root {
@@ -24,6 +25,7 @@
 
 @theme {
   --font-cursive: 'Pinyon Script', cursive;
+  --font-cursive-secondary: 'Ballet', cursive;
   --font-test: 'EB Garamond', serif;
   --font-serif: var(--font-serif);
   --color-orchid: #cdb4db;
