@@ -60,9 +60,11 @@ export async function POST(req: Request) {
     if (dbErr) throw dbErr;
 
     return NextResponse.json({ ok: true, approved: !requireApproval });
-  } catch (e: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Upload failed';
+
     return NextResponse.json(
-      { error: e?.message ?? 'Upload failed' },
+      { error: message },
       { status: 500 }
     );
   }

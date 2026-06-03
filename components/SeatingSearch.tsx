@@ -23,15 +23,19 @@ export default function SeatingSearch() {
         const json = await res.json();
         if (!mounted) return;
 
-        setGuests(json.guests ?? []);
-        localStorage.setItem(
-          'wedding_guests_cache',
-          JSON.stringify(json.guests),
-        );
-      } catch (err) {
+        const guestList = Array.isArray(json.guests) ? json.guests : [];
+        setGuests(guestList);
+        localStorage.setItem('wedding_guests_cache', JSON.stringify(guestList));
+      } catch {
         const cached = localStorage.getItem('wedding_guests_cache');
         if (cached && mounted) {
-          setGuests(JSON.parse(cached));
+          try {
+            const parsed = JSON.parse(cached);
+            setGuests(Array.isArray(parsed) ? parsed : []);
+          } catch {
+            localStorage.removeItem('wedding_guests_cache');
+            setGuests([]);
+          }
         }
       } finally {
         if (mounted) setLoading(false);
@@ -80,7 +84,7 @@ export default function SeatingSearch() {
         <div className='mt-4 space-y-3 flex-1 min-h-0 overflow-y-auto'>
           {results.length === 0 ? (
             <div className='p-4 opacity-60 uppercase text-center'>
-              <div className=''>No matches yet</div>
+              <div>No matches yet</div>
             </div>
           ) : (
             results.map((g) => (

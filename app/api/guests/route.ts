@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fetchGuestsFromSheet } from '@/lib/sheets';
 
-let cache: { at: number; data: any[] } | null = null;
+type Guest = Awaited<ReturnType<typeof fetchGuestsFromSheet>>[number];
+
+let cache: { at: number; data: Guest[] } | null = null;
 const TTL_MS = 60000; // 1 minute cache (tweak)
 
 export async function GET() {
@@ -15,9 +17,12 @@ export async function GET() {
     cache = { at: now, data: guests };
 
     return NextResponse.json({ guests, cached: false });
-  } catch (e: any) {
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to load guests';
+
     return NextResponse.json(
-      { error: e?.message ?? 'Failed to load guests' },
+      { error: message },
       { status: 500 }
     );
   }

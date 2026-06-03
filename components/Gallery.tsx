@@ -103,10 +103,20 @@ export default function Gallery({
   );
 
   async function fetchPosts() {
-    const res = await fetch('/api/posts', { cache: 'no-store' });
-    const json = await res.json();
-    setPosts(json.posts ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/posts', { cache: 'no-store' });
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error || 'Failed to load posts');
+      }
+
+      setPosts(Array.isArray(json.posts) ? json.posts : []);
+    } catch {
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function load() {
@@ -198,7 +208,11 @@ export default function Gallery({
     );
   }
 
-  function renderActiveSlide(post: Post, index: number, role: 'current' | 'next') {
+  function renderActiveSlide(
+    post: Post,
+    index: number,
+    role: 'current' | 'next'
+  ) {
     const isTransitioning = slideTransition !== null;
     const isOutgoing = role === 'current';
     const direction = slideTransition?.direction ?? 1;
@@ -282,7 +296,7 @@ export default function Gallery({
                           playsInline
                         />
                         <FaPlay
-                          className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/80'
+                          className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/80'
                           size={36}
                         />
                       </>
@@ -294,11 +308,20 @@ export default function Gallery({
                       onClick={async () => {
                         if (!confirm('Delete this photo/video?')) return;
 
-                        await fetch(`/api/posts/${p.id}`, {
+                        const res = await fetch(`/api/posts/${p.id}`, {
                           method: 'DELETE',
                         });
 
-                        location.reload();
+                        if (!res.ok) return;
+
+                        setPosts((current) =>
+                          current.filter((post) => post.id !== p.id)
+                        );
+                        setActiveIndex((current) => {
+                          if (current === null) return current;
+                          if (current === index) return null;
+                          return current > index ? current - 1 : current;
+                        });
                       }}
                     >
                       x

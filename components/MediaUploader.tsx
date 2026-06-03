@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export default function MediaUploader({
   onUploaded,
@@ -29,7 +29,7 @@ export default function MediaUploader({
       if (!res.ok) {
         setMsg(json.error || 'Upload failed');
       } else {
-        setMsg(json.approved ? 'Uploaded!' : 'Upload - pending approval');
+        setMsg(json.approved ? 'Uploaded!' : 'Upload pending approval');
         onUploaded();
       }
     } catch {
@@ -69,7 +69,7 @@ export default function MediaUploader({
           disabled:opacity-50 active:scale-[0.98]
         '
       >
-        {busy ? 'Uploading…' : 'Upload Photo/Video'}
+        {busy ? 'Uploading...' : 'Upload Photo/Video'}
       </button>
 
       {msg && (

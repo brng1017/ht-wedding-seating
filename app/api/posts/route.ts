@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { supabasePublic } from '@/lib/supabase/client';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function GET() {
-  const { data, error } = await supabasePublic
+  const { data, error } = await supabaseServer
     .from('posts')
     .select('id, created_at, file_path, file_type, caption')
     .eq('approved', true)
