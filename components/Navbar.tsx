@@ -2,10 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MdOutlineTableBar, MdOutlineCameraAlt } from 'react-icons/md';
+import {
+  MdCelebration,
+  MdOutlineCameraAlt,
+  MdOutlineTableBar,
+} from 'react-icons/md';
 import { LiaTabletsSolid } from 'react-icons/lia';
 
-export default function Navbar() {
+export default function Navbar({
+  hasUploadAccess = false,
+}: {
+  hasUploadAccess?: boolean;
+}) {
   const pathname = usePathname();
   const getNavLinkClassName = (href: string) =>
     `py-3.5 px-2 pb-3 flex flex-col items-center gap-1.5 flex-1 relative transition-colors duration-200
@@ -33,6 +41,20 @@ export default function Navbar() {
         <MdOutlineCameraAlt size={20} />
         <p>Photo Share</p>
       </Link>
+
+      {hasUploadAccess ? (
+        <>
+          <div className='w-px bg-taupe/18 my-3.5' />
+
+          <Link
+            className={getNavLinkClassName('/after-party')}
+            href='/after-party'
+          >
+            <MdCelebration size={20} />
+            <p>After Party</p>
+          </Link>
+        </>
+      ) : null}
     </nav>
   );
 }

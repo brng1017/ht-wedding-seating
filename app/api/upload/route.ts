@@ -1,10 +1,28 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { supabaseServer } from '@/lib/supabase/server';
+import {
+  UPLOAD_ACCESS_COOKIE_NAME,
+  verifyUploadAccessToken,
+} from '@/lib/upload-access';
 
 const MAX_MB = 30;
 
 export async function POST(req: Request) {
   try {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get(UPLOAD_ACCESS_COOKIE_NAME)?.value;
+    const uploadAccess = accessToken
+      ? verifyUploadAccessToken(accessToken)
+      : null;
+
+    if (!uploadAccess) {
+      return NextResponse.json(
+        { error: 'Upload access is required' },
+        { status: 401 },
+      );
+    }
+
     const requireApproval =
       (process.env.UPLOADS_REQUIRE_APPROVAL ?? 'true') === 'true';
 

@@ -1,18 +1,27 @@
-'use client';
+import { cookies } from 'next/headers';
+import MediaPageClient from '@/components/MediaPageClient';
+import {
+  getUploadAccessFromCookieValue,
+  UPLOAD_ACCESS_COOKIE_NAME,
+} from '@/lib/upload-access';
 
-import { useState } from 'react';
-import MediaUploader from '@/components/MediaUploader';
-import Gallery from '@/components/Gallery';
+type MediaPageProps = {
+  searchParams: Promise<{
+    access?: string;
+  }>;
+};
 
-export default function MediaPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
+export default async function MediaPage({ searchParams }: MediaPageProps) {
+  const cookieStore = await cookies();
+  const access = getUploadAccessFromCookieValue(
+    cookieStore.get(UPLOAD_ACCESS_COOKIE_NAME)?.value,
+  );
+  const params = await searchParams;
 
   return (
-    <div className='relative h-full flex flex-col items-center p-3'>
-      <h1 className='text-5xl font-cursive'>Photo Share</h1>
-
-      <Gallery refreshKey={refreshKey} />
-      <MediaUploader onUploaded={() => setRefreshKey((x) => x + 1)} />
-    </div>
+    <MediaPageClient
+      hasUploadAccess={Boolean(access)}
+      accessState={params.access === 'invalid' ? 'invalid' : 'idle'}
+    />
   );
 }

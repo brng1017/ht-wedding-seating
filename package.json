@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "create:upload-token": "node scripts/generate-upload-token.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.2",

@@ -69,7 +69,7 @@ export default function SeatingSearch() {
   return (
     <div className='w-full flex-1 p-4 flex flex-col min-h-0'>
       <input
-        className='w-full border-b px-4 py-3 text-base text-center uppercase md:text-sm'
+        className='w-full border-b border-black/30 px-4 py-3 text-base text-center uppercase outline-none transition-colors focus:border-black focus:outline-none md:text-sm'
         placeholder={
           loading ? 'Loading guest list...' : 'Start typing your name...'
         }
