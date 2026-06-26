@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import floorplan from '../../public/floorplan.jpg';
+import floorplan from '../../public/htseatingchart.png';
 
 export default function SeatingPage() {
   return (
