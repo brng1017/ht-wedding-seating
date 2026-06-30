@@ -12,9 +12,6 @@ export default function MediaUploader({
   const [msg, setMsg] = useState<string | null>(null);
 
   async function uploadFile(file: File) {
-    setBusy(true);
-    setMsg(null);
-
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -27,13 +24,72 @@ export default function MediaUploader({
       const json = await res.json();
 
       if (!res.ok) {
-        setMsg(json.error || 'Upload failed');
+        return {
+          ok: false,
+          message: json.error || 'Upload failed',
+        };
       } else {
-        setMsg(json.approved ? 'Uploaded!' : 'Upload pending approval');
-        onUploaded();
+        return {
+          ok: true,
+          message: json.approved ? 'Uploaded!' : 'Upload pending approval',
+        };
       }
     } catch {
-      setMsg('Upload failed');
+      return {
+        ok: false,
+        message: 'Upload failed',
+      };
+    }
+  }
+
+  async function uploadFiles(files: File[]) {
+    setBusy(true);
+    setMsg(null);
+
+    let successCount = 0;
+    let failureCount = 0;
+    let lastFailureMessage: string | null = null;
+
+    try {
+      for (const [index, file] of files.entries()) {
+        setMsg(
+          files.length === 1
+            ? `Uploading ${file.name}...`
+            : `Uploading ${index + 1} of ${files.length}...`,
+        );
+
+        const result = await uploadFile(file);
+        if (result.ok) {
+          successCount += 1;
+        } else {
+          failureCount += 1;
+          lastFailureMessage = result.message;
+        }
+      }
+
+      if (successCount > 0) {
+        onUploaded();
+      }
+
+      if (failureCount === 0) {
+        setMsg(
+          successCount === 1
+            ? 'Uploaded!'
+            : `${successCount} uploads complete!`,
+        );
+        return;
+      }
+
+      if (successCount === 0) {
+        setMsg(lastFailureMessage || 'Upload failed');
+        return;
+      }
+
+      setMsg(
+        `${successCount} uploaded, ${failureCount} failed${
+          lastFailureMessage ? `: ${lastFailureMessage}` : ''
+        }`,
+      );
     } finally {
       setBusy(false);
       if (fileInputRef.current) {
@@ -48,10 +104,13 @@ export default function MediaUploader({
         ref={fileInputRef}
         type='file'
         accept='image/*,video/*'
+        multiple
         className='hidden'
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) uploadFile(file);
+          const files = Array.from(e.target.files ?? []);
+          if (files.length > 0) {
+            void uploadFiles(files);
+          }
         }}
       />
 
@@ -69,7 +128,7 @@ export default function MediaUploader({
           disabled:opacity-50 active:scale-[0.98]
         '
       >
-        {busy ? 'Uploading...' : 'Upload Photo/Video'}
+        {busy ? 'Uploading...' : 'Upload Photos/Videos'}
       </button>
 
       {msg && (
